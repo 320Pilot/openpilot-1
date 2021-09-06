@@ -33,8 +33,8 @@ _ENTERING_SMOOTH_DECEL_BP = [1.3, 3]  # absolute value of lat acc ahead
 
 # Lookup table for the acceleration for the TURNING state
 # depending on the current lateral acceleration of the vehicle.
-_TURNING_ACC_V = [0.4, 0., -0.4]  # acc value
-_TURNING_ACC_BP = [1.3, 2., 3.]  # absolute value of current lat acc
+_TURNING_ACC_V = [0.5, 0., -0.4]  # acc value
+_TURNING_ACC_BP = [1.5, 2.3, 3.]  # absolute value of current lat acc
 
 _LEAVING_ACC = 0.5  # Confortble acceleration to regain speed while leaving a turn.
 
@@ -110,6 +110,14 @@ class VisionTurnController():
   def state(self):
     return self._state
 
+  @state.setter
+  def state(self, value):
+    if value != self._state:
+      _debug(f'TVC: TurnVisionController state: {_description_for_state(value)}')
+      if value == VisionTurnControllerState.disabled:
+        self._reset()
+    self._state = value
+
   @property
   def a_target(self):
     return self._a_target if self.is_active else self._a_ego
@@ -121,14 +129,6 @@ class VisionTurnController():
   @property
   def is_active(self):
     return self._state != VisionTurnControllerState.disabled
-
-  @state.setter
-  def state(self, value):
-    if value != self._state:
-      _debug(f'TVC: TurnVisionController state: {_description_for_state(value)}')
-      if value == VisionTurnControllerState.disabled:
-        self._reset()
-    self._state = value
 
   def _reset(self):
     self._current_lat_acc = 0.
