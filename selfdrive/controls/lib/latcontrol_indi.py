@@ -82,7 +82,6 @@ class LatControlINDI():
 
     return self.sat_count > self.sat_limit
 
-
   def update(self, active, CS, CP, VM, params, curvature, curvature_rate):
     self.speed = CS.vEgo
     # Update Kalman filter
@@ -96,11 +95,13 @@ class LatControlINDI():
 
     steers_des = VM.get_steer_from_curvature(-curvature, CS.vEgo)
     steers_des += math.radians(params.angleOffsetDeg)
-    if CS.vEgo < 0.3 or not active:
+    if CS.vEgo < 16.99 or not active: # Fix for upwind - JPR
       indi_log.active = False
       self.output_steer = 0.0
       self.steer_filter.x = 0.0
+      self.reset()
     else:
+
       rate_des = VM.get_steer_from_curvature(-curvature_rate, CS.vEgo)
 
       # Expected actuator value

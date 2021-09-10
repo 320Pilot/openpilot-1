@@ -1,11 +1,14 @@
-Version 0.8.8 (2021-08-XX)
+Version 0.8.9 (2021-09-XX)
 ========================
-* EMS11 Implemented.
-  * SPAS Debugging toggle outputs debug info to "tmux a".
+* Added enable rate limit to get rid of rapid jerk to posistion and removed assist steering warning when angle is too far from apply_angle.
+* Fixed Override.
+* Fixed upwind swing needs more testing.
+Version 0.8.8 (2021-08-31)
+========================
 * OpenPilot now correctly reads and handles all SPAS states
 * Fixed SPAS.
 * Fixed SPAS to KLAS switch. 
-  * Switches at 45MPH
+  * Switches at 41MPH
 * Fixed wobbles
  * New driving model with improved laneless performance
    * Trained on 5000+ hours of diverse driving data from 3000+ users in 40+ countries
@@ -146,8 +149,7 @@ Version 0.8.5 (2021-XX-XX)
  * NEOS 18 for comma two: update packages
  * AGNOS 1.3 for comma three: fix display init at high temperatures
  * Improved auto-exposure on comma three
- * Honda Accord 2021 support thanks to csouers!
- * Honda Accord Hybrid 2021 support thanks to csouers!
+ * Improved longitudinal control on Honda Nidec cars
  * Hyundai Kona Hybrid 2020 support thanks to haram-KONA!
  * Hyundai Sonata Hybrid 2021 support thanks to Matt-Wash-Burn!
  * Kia Niro Hybrid 2021 support thanks to tetious!

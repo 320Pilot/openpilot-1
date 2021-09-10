@@ -1,7 +1,4 @@
-import math
-from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.car.hyundai.interface import CarInterface, Params
-from selfdrive.controls.lib.latcontrol_indi import LatControlINDI
+
 from common.numpy_fast import clip, interp
 import numpy as np
 import os
@@ -23,13 +20,16 @@ from selfdrive.road_speed_limiter import road_speed_limiter_get_active
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
 ###### SPAS ######
-STEER_ANG_MAX = 250         # SPAS Max Angle
+STEER_ANG_MAX = 350         # SPAS Max Angle
 #MAX DELTA V limits values
 ANGLE_DELTA_BP = [0., 5., 15.]
 ANGLE_DELTA_V = [0.8, 0.5, 0.2]     # windup limit
 ANGLE_DELTA_VU = [1.0, 0.8, 0.3]   # unwind limit
-TQ = 20 # = 1 NM * 100 is unit of measure for wheel.
-SPAS_SWITCH = 43 * CV.MPH_TO_MS #MPH
+TQ = 250 # = 1 NM * 100 is unit of measure for wheel.
+SPAS_SWITCH = 38 * CV.MPH_TO_MS #MPH
+#Try to fix OpenPilot wobble of SPAS at speed.
+SPEED = [0., 10., 20., 30., 40.]
+RATIO = [1., 1.0, 0.985, 0.97, 0.955]
 ###### SPAS #######
 
 EventName = car.CarEvent.EventName
@@ -99,8 +99,10 @@ class CarController():
       self.mdps11_stat_last = 0
       self.spas_always = Params().get_bool('spasAlways')
       self.lkas_active = False
-      self.EMS366 = False
-      self.EMS311 = False
+      self.spas_active = False
+      self.spas_active_last = 0
+      self.assist = False
+      self.override = False
       
     self.ldws_opt = Params().get_bool('IsLdwsCar')
     self.stock_navi_decel_enabled = Params().get_bool('StockNaviDecelEnabled')
@@ -115,7 +117,7 @@ class CarController():
     # *** compute control surfaces ***
 
     # gas and brake
-    apply_accel = actuators.gas - actuators.brake
+    apply_accel = actuators.accel / CarControllerParams.ACCEL_SCALE
     apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady)
     apply_accel = self.scc_smoother.get_accel(CS, controls.sm, apply_accel)
     apply_accel = clip(apply_accel * CarControllerParams.ACCEL_SCALE,
@@ -131,28 +133,50 @@ class CarController():
     # SPAS limit angle extremes for safety
     if CS.spas_enabled:
       apply_angle = actuators.steeringAngleDeg
-      if self.last_apply_angle * apply_angle > 0. and abs(apply_angle) > abs(self.last_apply_angle):
-        rate_limit = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_V)
+      if abs(apply_angle - CS.out.steeringAngleDeg) > 8: # Rate limit for when steering angle is far from apply_angle - JPR
+        rate_limit = 7
+        apply_angle = clip(actuators.steeringAngleDeg, CS.out.steeringAngleDeg - rate_limit, CS.out.steeringAngleDeg + rate_limit)
       else:
-        rate_limit = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
+        if self.last_apply_angle * apply_angle > 0. and abs(apply_angle) > abs(self.last_apply_angle):
+          rate_limit = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_V)
+        else:
+          rate_limit = interp(CS.out.vEgo, ANGLE_DELTA_BP, ANGLE_DELTA_VU)
+        apply_angle = clip(actuators.steeringAngleDeg, self.last_apply_angle - rate_limit, self.last_apply_angle + rate_limit)    
 
-      apply_angle = clip(actuators.steeringAngleDeg, self.last_apply_angle - rate_limit, self.last_apply_angle + rate_limit) 
+      if Params().get_bool('spasAlways'):
+        apply_angle = apply_angle * interp(CS.out.vEgo, SPEED, RATIO)
       self.last_apply_angle = apply_angle
 
-    spas_active = CS.spas_enabled and enabled and CS.out.vEgo < SPAS_SWITCH or CS.spas_enabled and enabled and self.spas_active and abs(apply_angle) > 0.5 
-    self.spas_active = spas_active
-    lkas_active = enabled and abs(CS.out.steeringAngleDeg) < CS.CP.maxSteeringAngleDeg and not spas_active
-    self.lkas_active = lkas_active
+    spas_active = CS.spas_enabled and enabled and CS.out.vEgo < SPAS_SWITCH or CS.spas_enabled and enabled and self.spas_always 
+  
+    lkas_active = enabled and abs(CS.out.steeringAngleDeg) < CS.CP.maxSteeringAngleDeg and not spas_active and not TQ <= CS.out.steeringWheelTorque <= -TQ
+
+    if abs(apply_angle - CS.out.steeringAngleDeg) > 10:
+      self.assist = True
+    else:
+      self.assist = False
+      
+    # Disable steering while turning blinker on and speed below 60 kph
+    if CS.out.leftBlinker or CS.out.rightBlinker:
+      self.turning_signal_timer = 1.0 / DT_CTRL  # Disable for 1.0 Seconds after blinker turned off
+    if self.turning_indicator_alert and enabled: # set and clear by interface
+      lkas_active = False
+      spas_active = False
+
     if not lkas_active:
       apply_steer = 0
-    if abs(apply_angle - CS.out.steeringAngleDeg) > 10:
+
+    if abs(CS.out.steeringWheelTorque) > TQ:
+      lkas_active = False
       spas_active = False
-    if lkas_active and 50 * CV.MPH_TO_MS >= CS.out.vEgo > SPAS_SWITCH and abs(apply_angle) > 10:
-      spas_active = True
-    if CS.spas_enabled:
-      if enabled and TQ <= CS.out.steeringWheelTorque <= -TQ:
-        spas_active = False
-    
+      print("OVERRIDE")
+
+    self.lkas_active = lkas_active
+    self.spas_active = spas_active
+
+    if self.turning_signal_timer > 0:
+      self.turning_signal_timer -= 1  
+
     UseSMDPS = Params().get_bool('UseSMDPSHarness')
     if Params().get_bool('LongControlEnabled'):
       min_set_speed = 0 * CV.KPH_TO_MS
@@ -173,17 +197,6 @@ class CarController():
         lkas_active = False
         min_set_speed = 30 * CV.KPH_TO_MS
 
-    # Disable steering while turning blinker on and speed below 60 kph
-    if CS.out.leftBlinker or CS.out.rightBlinker:
-      self.turning_signal_timer = 1.0 / DT_CTRL  # Disable for 1.0 Seconds after blinker turned off
-    if self.turning_indicator_alert and enabled: # set and clear by interface
-      lkas_active = False
-      spas_active = False
-      if not self.turning_indicator_alert:
-        spas_active = True
-
-    if self.turning_signal_timer > 0:
-      self.turning_signal_timer -= 1  
 
     self.apply_accel_last = apply_accel
     self.apply_steer_last = apply_steer
@@ -354,8 +367,6 @@ class CarController():
           else:
             spas_active_stat = False
         can_sends.append(create_ems11(self.packer, CS.ems11, spas_active_stat))
-        if Params().get_bool('SPASDebug'):
-          print("EMS11")
       if (frame % 2) == 0:
         if CS.mdps11_stat == 7:
           self.en_spas = 7
@@ -364,17 +375,6 @@ class CarController():
           self.en_spas = 3
           if CS.mdps11_stat == 3:
             self.en_spas = 2
-            if CS.mdps11_stat == 2:
-              self.en_spas = 3
-              if CS.mdps11_stat == 3:
-                self.en_spas = 4
-                if CS.mdps11_stat == 3 and self.en_spas == 4:
-                  self.en_spas = 3  
-
-        if CS.mdps11_stat == 3 and spas_active:
-          self.en_spas = 4
-          if CS.mdps11_stat == 4:
-            self.en_spas = 5
           
         if CS.mdps11_stat == 2 and spas_active:
           self.en_spas = 3 # Switch to State 3, and get Ready to Assist(Steer). JPR
@@ -386,7 +386,7 @@ class CarController():
           self.en_spas = 5
 
         if CS.mdps11_stat == 5 and not spas_active:
-          self.en_spas = 3
+          self.en_spas = 7
 
         if CS.mdps11_stat == 6: # Failed to Assist and Steer, Set state back to 2 for a new request. JPR
           self.en_spas = 2    
@@ -406,5 +406,10 @@ class CarController():
         if Params().get_bool('SPASDebug'):
           print("MDPS SPAS State: ", CS.mdps11_stat) # SPAS STATE DEBUG
           print("OP SPAS State: ", self.en_spas) # OpenPilot Ask MDPS to switch to state.
-
+          print("spas_active:", spas_active)
+          print("lkas_active:", lkas_active)
+          print("driver torque:", CS.out.steeringWheelTorque)
+          if Params().get_bool('SPASDebug'):
+            print("EMS11")
+    self.spas_active_last = spas_active
     return can_sends
