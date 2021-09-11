@@ -199,4 +199,4 @@ def create_ems11(packer, ems11, enabled):
   values = ems11
   if enabled:
     values["VS"] = 1
-  return packer.make_can_msg("EMS11", 1, values)
+  return packer.make_can_msg("E_EMS11", 1, values)
