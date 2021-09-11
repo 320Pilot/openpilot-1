@@ -371,10 +371,11 @@ class CarController():
         if CS.mdps11_stat == 7:
           self.en_spas = 7
 
-        if CS.mdps11_stat == 7 and self.mdps11_stat_last == 7:
+        if CS.mdps11_stat == 7:
           self.en_spas = 3
-          if CS.mdps11_stat == 3:
-            self.en_spas = 2
+        
+        if self.en_spas == 3 and spas_active:
+          self.en_spas = 2
           
         if CS.mdps11_stat == 2 and spas_active:
           self.en_spas = 3 # Switch to State 3, and get Ready to Assist(Steer). JPR
@@ -410,5 +411,6 @@ class CarController():
           print("lkas_active:", lkas_active)
           print("driver torque:", CS.out.steeringWheelTorque)
           print("EMS11")
+          print("vEgo:", CS.out.vEgo)
     self.spas_active_last = spas_active
     return can_sends
