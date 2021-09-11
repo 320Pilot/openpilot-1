@@ -405,7 +405,7 @@ class CarController():
           print("spas_active:", spas_active)
           print("lkas_active:", lkas_active)
           print("driver torque:", CS.out.steeringWheelTorque)
-          print("EMS11")
+          print("E_EMS11")
           print("vEgo:", CS.out.vEgo * CV.MS_TO_MPH)
     self.spas_active_last = spas_active
     return can_sends
