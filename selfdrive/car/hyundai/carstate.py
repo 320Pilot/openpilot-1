@@ -222,7 +222,7 @@ class CarState(CarStateBase):
       self.scc14 = cp_scc.vl["SCC14"]
 
     if self.spas_enabled: # SPAS
-      self.ems11 = cp.vl["E_EMS11"]
+      self.ems11 = cp.vl["EMS11"]
       self.mdps11_strang = cp_mdps.vl["MDPS11"]["CR_Mdps_StrAng"]
       self.mdps11_stat = cp_mdps.vl["MDPS11"]["CF_Mdps_Stat"]
 
