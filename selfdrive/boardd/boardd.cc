@@ -67,7 +67,7 @@ void safety_setter_thread(Panda *panda) {
       LOGW("got CarVin %s", value_vin.c_str());
       break;
     }
-    util::sleep_for(100);
+    util::sleep_for(20);
   }
 
   // VIN query done, stop listening to OBDII
@@ -171,7 +171,7 @@ static Panda *usb_retry_connect() {
       LOGW("connected to board");
       return panda;
     }
-    util::sleep_for(100); 
+    util::sleep_for(100);
   };
   return nullptr;
 }

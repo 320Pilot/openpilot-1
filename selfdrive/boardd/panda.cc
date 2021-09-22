@@ -85,9 +85,6 @@ Panda::Panda(std::string serial) {
 
 fail:
   cleanup();
-  if (dev_list != NULL) {
-    libusb_free_device_list(dev_list, 1);
-  }
   throw std::runtime_error("Error connecting to panda");
 }
 
