@@ -1,5 +1,8 @@
 from cereal import car
 from common.params import Params
+from selfdrive.car.hyundai.values import DBC, STEER_THRESHOLD, FEATURES, CAR, HYBRID_CAR, EV_HYBRID_CAR
+from selfdrive.car.interfaces import CarStateBase
+from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.car.hyundai.values import (CAR, DBC, EV_CAR, FEATURES,
@@ -139,7 +142,7 @@ class CarState(CarStateBase):
 
     ret.gasPressed = cp.vl["TCS13"]["DriverOverride"] == 1
 
-    if self.CP.carFingerprint in (HYBRID_CAR | EV_CAR):
+    if self.CP.carFingerprint in EV_HYBRID_CAR:
       if self.CP.carFingerprint in HYBRID_CAR:
         ret.gas = cp.vl["E_EMS11"]["CR_Vcu_AccPedDep_Pos"] / 254.
       else:
@@ -242,6 +245,13 @@ class CarState(CarStateBase):
     self.cruiseState_enabled = ret.cruiseState.enabled
     self.cruiseState_speed = ret.cruiseState.speed
     ret.cruiseGap = self.cruise_gap
+
+    tpms_unit = cp.vl["TPMS11"]["UNIT"] * 0.725 if int(cp.vl["TPMS11"]["UNIT"]) > 0 else 1.
+    ret.tpms.fl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FL"]
+    ret.tpms.fr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FR"]
+    ret.tpms.rl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RL"]
+    ret.tpms.rr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RR"]
+
     return ret
 
   @staticmethod
@@ -464,7 +474,7 @@ class CarState(CarStateBase):
         ("CF_Lvr_Gear","LVR12",0),
       ]
 
-    if CP.carFingerprint in (HYBRID_CAR | EV_CAR):
+    if CP.carFingerprint in EV_HYBRID_CAR:
       if CP.carFingerprint in HYBRID_CAR:
         signals += [
           ("CR_Vcu_AccPedDep_Pos", "E_EMS11", 0)
