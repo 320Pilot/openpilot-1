@@ -2,7 +2,6 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <cmath>
 
 static void ui_draw_extras_limit_speed(UIState *s)
 {
@@ -155,5 +154,4 @@ static void ui_draw_extras_tire_pressure(UIState *s)
 static void ui_draw_extras(UIState *s)
 {
     ui_draw_extras_limit_speed(s);
-    ui_draw_extras_tire_pressure(s);
 }

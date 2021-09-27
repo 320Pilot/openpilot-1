@@ -30,18 +30,18 @@ class CarInterface(CarInterfaceBase):
     if True:  # pylint: disable=using-constant-test
       # Set global MQB parameters
       ret.safetyModel = car.CarParams.SafetyModel.volkswagen
-      ret.enableBsm = 0x30F in fingerprint[0]  # SWA_01
+      ret.enableBsm = 0x30F in fingerprint[0]
 
       if 0xAD in fingerprint[0]:  # Getriebe_11
         ret.transmissionType = TransmissionType.automatic
       elif 0x187 in fingerprint[0]:  # EV_Gearshift
         ret.transmissionType = TransmissionType.direct
-      else:
+      else:  # No trans message at all, must be a true stick-shift manual
         ret.transmissionType = TransmissionType.manual
 
-      if any(msg in fingerprint[1] for msg in [0x40, 0x86, 0xB2]):  # Airbag_01, LWI_01, ESP_19
+      if 0x86 in fingerprint[1]:  # LWI_01 seen on bus 1, we're wired to the CAN gateway
         ret.networkLocation = NetworkLocation.gateway
-      else:
+      else:  # We're wired to the LKAS camera
         ret.networkLocation = NetworkLocation.fwdCamera
 
     # Global tuning defaults, can be overridden per-vehicle
