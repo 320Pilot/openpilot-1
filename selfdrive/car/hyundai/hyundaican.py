@@ -218,4 +218,5 @@ def create_ems11(packer, ems11, enabled):
   values = ems11
   if enabled:
     values["Accel_Pedal_Pos"] = 1
+    values["CR_Vcu_AccPedDep_Pos"] = 1
   return packer.make_can_msg("E_EMS11", 1, values)
