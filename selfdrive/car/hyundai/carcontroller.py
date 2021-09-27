@@ -376,8 +376,7 @@ class CarController():
             spas_active_stat = True
           else:
             spas_active_stat = False
-        can_sends.append(create_ems_366(self.packer, CS.ems_366, spas_active_stat))
-
+        can_sends.append(create_ems11(self.packer, CS.ems11, spas_active_stat))
 
       if (frame % 2) == 0:
         if CS.mdps11_stat == 7:
