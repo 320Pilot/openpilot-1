@@ -422,6 +422,6 @@ class CarController():
           print("lkas_active:", lkas_active)
           print("driver torque:", CS.out.steeringWheelTorque)
           if Params().get_bool('SPASDebug'):
-            print("EMS366")
+            print("E_EMS11")
     self.spas_active_last = spas_active
     return can_sends
