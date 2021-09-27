@@ -220,6 +220,14 @@ struct CarState {
 
   cruiseGap @42 : Int32;
   autoHold @44 : Int32;
+  tpms @45 : Tpms;
+
+  struct Tpms {
+    fl @0 :Float32;
+    fr @1 :Float32;
+    rl @2 :Float32;
+    rr @3 :Float32;
+  }
 
   struct WheelSpeeds {
     # optional wheel speeds
@@ -348,7 +356,17 @@ struct CarControl {
     # range from -1.0 - 1.0
     steer @2: Float32;
     steeringAngleDeg @3: Float32;
+
     accel @4: Float32; # m/s^2
+    longControlState @5: LongControlState;
+
+    enum LongControlState @0xe40f3a917d908282{
+      off @0;
+      pid @1;
+      stopping @2;
+      starting @3;
+    }
+
   }
 
   struct CruiseControl {
@@ -454,9 +472,11 @@ struct CarParams {
   steerLimitTimer @47 :Float32;  # time before steerLimitAlert is issued
 
   vEgoStopping @29 :Float32; # Speed at which the car goes into stopping state
+  vEgoStarting @59 :Float32; # Speed at which the car goes into starting state
   directAccelControl @30 :Bool; # Does the car have direct accel control or just gas/brake
   stoppingControl @31 :Bool; # Does the car allows full control even at lows speeds when stopping
   startAccel @32 :Float32; # Required acceleraton to overcome creep braking
+  stopAccel @60 :Float32; # Required acceleraton to keep vehicle stationary
   steerRateCost @33 :Float32; # Lateral MPC cost on steering rate
   steerControlType @34 :SteerControlType;
   radarOffCan @35 :Bool; # True when radar objects aren't visible on CAN
@@ -465,6 +485,7 @@ struct CarParams {
   startingAccelRate @53 :Float32; # m/s^2/s while trying to start
 
   steerActuatorDelay @36 :Float32; # Steering wheel actuator delay in seconds
+  longitudinalActuatorDelay @58 :Float32; # Gas/Brake actuator delay in seconds
   openpilotLongitudinalControl @37 :Bool; # is openpilot doing the longitudinal control?
   carVin @38 :Text; # VIN number queried during fingerprinting
   dashcamOnly @41: Bool;
@@ -475,14 +496,13 @@ struct CarParams {
   communityFeature @46: Bool;  # true if a community maintained feature is detected
   fingerprintSource @49: FingerprintSource;
   networkLocation @50 :NetworkLocation;  # Where Panda/C2 is integrated into the car's CAN network
-  mdpsBus @58: Int8;
-  sasBus @59: Int8;
-  sccBus @60: Int8;
-  enableAutoHold @61 :Bool;
-  hasScc13 @62 :Bool;
-  hasScc14 @63 :Bool;
-  hasEms @64 :Bool;
-
+  mdpsBus @61: Int8;
+  sasBus @62: Int8;
+  sccBus @63: Int8;
+  enableAutoHold @64 :Bool;
+  hasScc13 @65 :Bool;
+  hasScc14 @66 :Bool;
+  hasEms @67 :Bool;
 
   struct LateralParams {
     torqueBP @0 :List(Int32);
