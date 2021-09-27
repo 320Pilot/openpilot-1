@@ -199,11 +199,11 @@ def create_spas11(packer, car_fingerprint, frame, en_spas, apply_steer, bus):
     "CF_Spas_PasVol": 0,
   }
   dat = packer.make_can_msg("SPAS11", 0, values)[2]
-  #if car_fingerprint in CHECKSUM["crc8"]:
-  #  dat = dat[:6]
-  #  values["CF_Spas_Chksum"] = hyundai_checksum(dat)
-  #else:
-  values["CF_Spas_Chksum"] = sum(dat[:6]) % 256
+  if car_fingerprint in CHECKSUM["crc8"]:
+    dat = dat[:6]
+    values["CF_Spas_Chksum"] = hyundai_checksum(dat)
+  else:
+    values["CF_Spas_Chksum"] = sum(dat[:6]) % 256
   return packer.make_can_msg("SPAS11", bus, values)
 
 def create_spas12(bus):
