@@ -1,5 +1,12 @@
-Version 0.8.9 (2021-09-XX)
+Version 0.8.10 (2021-XX-XX)
 ========================
+ * Škoda Karoq 2019 support thanks to jyoung8607!
+
+Version 0.8.9 (2021-09-14)
+========================
+* Improved fan control on comma three
+ * AGNOS 1.5: improved stability
+ * Honda e 2020 support
 * Added enable rate limit to get rid of rapid jerk to posistion and removed assist steering warning when angle is too far from apply_angle.
 * Fixed Override.
 * Fixed upwind swing needs more testing.

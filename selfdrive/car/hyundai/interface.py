@@ -22,7 +22,7 @@ class CarInterface(CarInterfaceBase):
     self.mad_mode_enabled = Params().get_bool('MadModeEnabled')
 
   @staticmethod
-  def get_pid_accel_limits(current_speed, cruise_speed):
+  def get_pid_accel_limits(CP, current_speed, cruise_speed):
 
     v_current_kph = current_speed * CV.MS_TO_KPH
 
@@ -100,10 +100,14 @@ class CarInterface(CarInterfaceBase):
       
     ret.longitudinalTuning.deadzoneBP = [0., 100. * CV.KPH_TO_MS]
     ret.longitudinalTuning.deadzoneV = [0., 0.015]
+    ret.longitudinalActuatorDelay = 0.2
 
-    ret.stoppingDecelRate = 0.6  # m/s^2/s while trying to stop
-    ret.startingAccelRate = 3.2  # m/s^2/s while trying to start
-    ret.startAccel = 2.0
+    ret.startAccel = -0.8
+    ret.stopAccel = -2.0
+    ret.startingAccelRate = 3.2  # brake_travel/s while releasing on restart
+    ret.stoppingDecelRate = 0.8  # brake_travel/s while trying to stop
+    ret.vEgoStopping = 0.5
+    ret.vEgoStarting = 0.5
 
     # genesis
     if candidate == CAR.GENESIS:
@@ -346,8 +350,8 @@ class CarInterface(CarInterfaceBase):
     elif candidate in [CAR.GRANDEUR_IG_FL, CAR.GRANDEUR_IG_FL_HEV]:
       os.system("cd /data/openpilot/selfdrive/assets && rm -rf img_spinner_comma.png && cp Hyundai.png img_spinner_comma.png")
       tire_stiffness_factor = 0.8
-      ret.mass = 1640. + STD_CARGO_KG
-      ret.wheelbase = 2.845
+      ret.mass = 1725. + STD_CARGO_KG
+      ret.wheelbase = 2.885
       ret.maxSteeringAngleDeg = 120.
       ret.centerToFront = ret.wheelbase * 0.385
     elif candidate == CAR.VELOSTER:
@@ -364,7 +368,6 @@ class CarInterface(CarInterfaceBase):
       tire_stiffness_factor = 0.7
       ret.centerToFront = ret.wheelbase * 0.4
       ret.maxSteeringAngleDeg = 120.
-      ret.startAccel = 0.5
     # kia
     elif candidate == CAR.SORENTO:
       os.system("cd /data/openpilot/selfdrive/assets && rm -rf img_spinner_comma.png && cp Kia.png img_spinner_comma.png")
